@@ -61,8 +61,23 @@ type astRoot struct {
 	children []*astItem
 }
 
-func (root *astRoot) append(newItem *astItem) {
+func (root *astRoot) peek() *astItem {
+	if len(root.children) == 0 {
+		return nil
+	}
+	return root.children[len(root.children)-1]
+}
+
+func (root *astRoot) push(newItem *astItem) {
 	root.children = append(root.children, newItem)
+}
+func (root *astRoot) pop() *astItem {
+	if len(root.children) == 0 {
+		return nil
+	}
+	item := root.children[len(root.children)-1]
+	root.children = root.children[:len(root.children)-1]
+	return item
 }
 
 func (root *astRoot) print() {
@@ -148,25 +163,24 @@ func isIdent(s string) bool {
 	return false
 }
 
-func (l *sqlLexer) check(tok token) error {
-	if len(l.ast.children) == 0 {
+func (l *sqlLexer) check(item *astItem) error {
+	var (
+		lValues  = syntaxRules[item.tok]
+		prevItem = l.ast.peek()
+	)
+	if prevItem == nil {
 		return nil
 	}
-	var (
-		lValues   = syntaxRules[tok]
-		prevToken = l.ast.children[len(l.ast.children)-1].tok
-	)
-
 	validLvalue := false
 	for i := range lValues {
 		//fmt.Printf("token %v, lValues: %v\n", tok, lValues)
-		if prevToken == lValues[i] {
+		if prevItem.tok == lValues[i] {
 			validLvalue = true
 			break
 		}
 	}
 	if !validLvalue {
-		return fmt.Errorf("left side of %q must be one of %v", tok, lValues)
+		return fmt.Errorf("left side of %q must be one of %v", item.tok, lValues)
 	}
 	return nil
 }
@@ -215,10 +229,10 @@ func (l *sqlLexer) Verify() error {
 				// We have a token
 				item := l.getAstItem(l.curToken)
 				//fmt.Printf("item %v\n", item.value)
-				if err := l.check(item.tok); err != nil {
+				if err := l.check(item); err != nil {
 					return err
 				}
-				l.ast.append(item)
+				l.ast.push(item)
 				l.curToken = ""
 			}
 			continue
@@ -236,18 +250,18 @@ func (l *sqlLexer) Verify() error {
 			// We have a token
 			item := l.getAstItem(l.curToken)
 			//fmt.Printf("item %v\n", item.value)
-			if err := l.check(item.tok); err != nil {
+			if err := l.check(item); err != nil {
 				return err
 			}
-			l.ast.append(item)
+			l.ast.push(item)
 			l.curToken = ""
 		}
 		item := l.getAstItem(text)
 		//fmt.Printf("item %v\n", item.value)
-		if err := l.check(item.tok); err != nil {
+		if err := l.check(item); err != nil {
 			return err
 		}
-		l.ast.append(item)
+		l.ast.push(item)
 	}
 	return nil
 }
