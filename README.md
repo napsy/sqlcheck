@@ -11,3 +11,6 @@ if err := sqlcheck.NewCheck("SELECT * from names WHERE > 20;") {
 	return fmt.Errorf("verifying SQL statement: %v", err)
 }
 ```
+## What's missing
+
+This is basic stuff, the code could generate a proper AST of the SQL statements and do more advanced checking.
