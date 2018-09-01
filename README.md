@@ -10,6 +10,10 @@ This package can check the validity of simple SQL statements by:
 if err := sqlcheck.NewCheck("SELECT * from names WHERE > 20;") {
 	return fmt.Errorf("verifying SQL statement: %v", err)
 }
+/*
+OUTPUT:
+verifying SQL statement: left side of ">" must be one of [identifier (0..9)]
+*/
 ```
 ## What's missing
 
