@@ -65,3 +65,11 @@ func TestSqlLexFail(t *testing.T) {
 	}
 
 }
+
+func BenchmarkSqlLex(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		if err := NewCheck("SELECT name FROM names WHERE age > 20;").Verify(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
